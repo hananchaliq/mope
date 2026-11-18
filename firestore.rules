@@ -1,0 +1,237 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function hasParentUser(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['userId', 'displayName', 'locale', 'timezone', 'theme', 'onboardingCompleted', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'displayName', 'locale', 'timezone', 'theme', 'onboardingCompleted', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid && data.userId == userId
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.locale is string && data.locale.size() >= 2 && data.locale.size() <= 16
+        && data.timezone is string && data.timezone.size() >= 2 && data.timezone.size() <= 64
+        && data.theme is string && data.theme.size() <= 16 && (data.theme == 'dark' || data.theme == 'light' || data.theme == 'system')
+        && data.onboardingCompleted is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAccount(data, userId) {
+      return data.keys().hasAll(['userId', 'name', 'type', 'openingBalance', 'currency', 'isArchived', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'name', 'type', 'openingBalance', 'currency', 'isArchived', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid && data.userId == userId
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
+        && data.type is string && data.type.size() <= 16 && (data.type == 'cash' || data.type == 'bank' || data.type == 'ewallet' || data.type == 'other')
+        && data.openingBalance is int && data.openingBalance >= -1000000000000 && data.openingBalance <= 1000000000000
+        && data.currency is string && data.currency.size() >= 3 && data.currency.size() <= 8
+        && data.isArchived is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCategory(data, userId) {
+      return data.keys().hasAll(['userId', 'name', 'kind', 'groupName', 'icon', 'color', 'isSystem', 'sortOrder', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'name', 'kind', 'groupName', 'icon', 'color', 'isSystem', 'sortOrder', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid && data.userId == userId
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
+        && data.kind is string && data.kind.size() <= 16 && (data.kind == 'income' || data.kind == 'expense')
+        && data.groupName is string && data.groupName.size() >= 1 && data.groupName.size() <= 60
+        && data.icon is string && data.icon.size() >= 1 && data.icon.size() <= 40
+        && data.color is string && data.color.size() >= 1 && data.color.size() <= 32
+        && data.isSystem is bool
+        && data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 10000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data, userId) {
+      return data.keys().hasAll(['userId', 'type', 'amount', 'accountId', 'toAccountId', 'categoryId', 'description', 'merchant', 'paymentMethod', 'occurredAt', 'notes', 'clientId', 'linkedFoodLogId', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'type', 'amount', 'accountId', 'toAccountId', 'categoryId', 'description', 'merchant', 'paymentMethod', 'occurredAt', 'notes', 'clientId', 'linkedFoodLogId', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid && data.userId == userId
+        && data.type is string && data.type.size() <= 16 && (data.type == 'income' || data.type == 'expense' || data.type == 'transfer')
+        && data.amount is int && data.amount > 0 && data.amount <= 1000000000000
+        && isValidId(data.accountId)
+        && data.toAccountId is string && data.toAccountId.size() <= 128
+        && (data.type != 'transfer' || (data.toAccountId.size() >= 1 && data.toAccountId != data.accountId))
+        && data.categoryId is string && data.categoryId.size() <= 128
+        && data.description is string && data.description.size() <= 160
+        && data.merchant is string && data.merchant.size() <= 100
+        && data.paymentMethod is string && data.paymentMethod.size() <= 40
+        && data.occurredAt is string && data.occurredAt.size() >= 10 && data.occurredAt.size() <= 40
+        && data.notes is string && data.notes.size() <= 500
+        && isValidId(data.clientId)
+        && data.linkedFoodLogId is string && data.linkedFoodLogId.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBudget(data, userId) {
+      return data.keys().hasAll(['userId', 'name', 'scope', 'categoryId', 'period', 'limitAmount', 'alertThresholds', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'name', 'scope', 'categoryId', 'period', 'limitAmount', 'alertThresholds', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid && data.userId == userId
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.scope is string && data.scope.size() <= 16 && (data.scope == 'total' || data.scope == 'category')
+        && data.categoryId is string && data.categoryId.size() <= 128
+        && data.period is string && data.period.size() <= 16 && (data.period == 'weekly' || data.period == 'monthly')
+        && data.limitAmount is int && data.limitAmount > 0 && data.limitAmount <= 1000000000000
+        && data.alertThresholds is list && data.alertThresholds.size() >= 1 && data.alertThresholds.size() <= 5 && data.alertThresholds[0] is int
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFoodLog(data, userId) {
+      return data.keys().hasAll(['userId', 'mealType', 'title', 'eatenAt', 'transactionId', 'userConfirmed', 'modelName', 'totalCalories', 'totalProteinG', 'totalCarbsG', 'totalFatG', 'totalFiberG', 'totalSodiumMg', 'validItemCount', 'totalItemCount', 'itemsSummary', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'mealType', 'title', 'eatenAt', 'transactionId', 'userConfirmed', 'modelName', 'totalCalories', 'totalProteinG', 'totalCarbsG', 'totalFatG', 'totalFiberG', 'totalSodiumMg', 'validItemCount', 'totalItemCount', 'itemsSummary', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid && data.userId == userId
+        && data.mealType is string && data.mealType.size() <= 16 && (data.mealType == 'breakfast' || data.mealType == 'lunch' || data.mealType == 'dinner' || data.mealType == 'snack' || data.mealType == 'drinks')
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.eatenAt is string && data.eatenAt.size() >= 10 && data.eatenAt.size() <= 40
+        && data.transactionId is string && data.transactionId.size() <= 128
+        && data.userConfirmed is bool && data.userConfirmed == true
+        && data.modelName is string && data.modelName.size() <= 80
+        && (data.totalCalories is int || data.totalCalories is float) && data.totalCalories >= 0
+        && (data.totalProteinG is int || data.totalProteinG is float) && data.totalProteinG >= 0
+        && (data.totalCarbsG is int || data.totalCarbsG is float) && data.totalCarbsG >= 0
+        && (data.totalFatG is int || data.totalFatG is float) && data.totalFatG >= 0
+        && (data.totalFiberG is int || data.totalFiberG is float) && data.totalFiberG >= 0
+        && (data.totalSodiumMg is int || data.totalSodiumMg is float) && data.totalSodiumMg >= 0
+        && data.validItemCount is int && data.validItemCount >= 0 && data.validItemCount <= 50
+        && data.totalItemCount is int && data.totalItemCount >= 1 && data.totalItemCount <= 50
+        && data.itemsSummary is string && data.itemsSummary.size() <= 2000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReportPreference(data, userId) {
+      return data.keys().hasAll(['userId', 'reportType', 'frequency', 'customCron', 'sendTime', 'channel', 'isEnabled', 'timezone', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'reportType', 'frequency', 'customCron', 'sendTime', 'channel', 'isEnabled', 'timezone', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid && data.userId == userId
+        && data.reportType is string && data.reportType.size() <= 16 && (data.reportType == 'financial' || data.reportType == 'nutrition')
+        && data.frequency is string && data.frequency.size() <= 24 && (data.frequency == 'daily' || data.frequency == 'weekly' || data.frequency == 'biweekly' || data.frequency == 'monthly' || data.frequency == 'quarterly' || data.frequency == 'custom_cron')
+        && data.customCron is string && data.customCron.size() <= 64
+        && data.sendTime is string && data.sendTime.size() >= 4 && data.sendTime.size() <= 16
+        && data.channel is string && data.channel.size() <= 16 && (data.channel == 'telegram' || data.channel == 'whatsapp')
+        && data.isEnabled is bool
+        && data.timezone is string && data.timezone.size() >= 2 && data.timezone.size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId)
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'locale', 'timezone', 'theme', 'onboardingCompleted', 'updatedAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /accounts/{accountId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(accountId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(accountId) && isValidAccount(incoming(), userId) && incoming().createdAt == request.time && incoming().updatedAt == request.time && hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(accountId) && isValidAccount(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'openingBalance', 'isArchived', 'updatedAt'])
+          && hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(accountId) && hasParentUser(userId);
+      }
+
+      match /categories/{categoryId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(categoryId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(categoryId) && isValidCategory(incoming(), userId) && incoming().createdAt == request.time && incoming().updatedAt == request.time && hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(categoryId) && isValidCategory(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'groupName', 'icon', 'color', 'sortOrder', 'updatedAt'])
+          && hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(categoryId) && hasParentUser(userId);
+      }
+
+      match /transactions/{transactionId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(transactionId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(transactionId) && isValidTransaction(incoming(), userId) && incoming().createdAt == request.time && incoming().updatedAt == request.time && hasParentUser(userId) && exists(/databases/$(database)/documents/users/$(userId)/accounts/$(incoming().accountId));
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(transactionId) && isValidTransaction(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().clientId == existing().clientId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['type', 'amount', 'accountId', 'toAccountId', 'categoryId', 'description', 'merchant', 'paymentMethod', 'occurredAt', 'notes', 'linkedFoodLogId', 'updatedAt'])
+          && hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(transactionId) && hasParentUser(userId);
+      }
+
+      match /budgets/{budgetId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(budgetId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(budgetId) && isValidBudget(incoming(), userId) && incoming().createdAt == request.time && incoming().updatedAt == request.time && hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(budgetId) && isValidBudget(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'scope', 'categoryId', 'period', 'limitAmount', 'alertThresholds', 'updatedAt'])
+          && hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(budgetId) && hasParentUser(userId);
+      }
+
+      match /foodLogs/{foodLogId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(foodLogId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(foodLogId) && isValidFoodLog(incoming(), userId) && incoming().createdAt == request.time && incoming().updatedAt == request.time && hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(foodLogId) && isValidFoodLog(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['mealType', 'title', 'eatenAt', 'transactionId', 'totalCalories', 'totalProteinG', 'totalCarbsG', 'totalFatG', 'totalFiberG', 'totalSodiumMg', 'validItemCount', 'totalItemCount', 'itemsSummary', 'updatedAt'])
+          && hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(foodLogId) && hasParentUser(userId);
+      }
+
+      match /reportPreferences/{prefId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(prefId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(prefId) && isValidReportPreference(incoming(), userId) && incoming().createdAt == request.time && incoming().updatedAt == request.time && hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(prefId) && isValidReportPreference(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['reportType', 'frequency', 'customCron', 'sendTime', 'channel', 'isEnabled', 'timezone', 'updatedAt'])
+          && hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(prefId) && hasParentUser(userId);
+      }
+    }
+  }
+}

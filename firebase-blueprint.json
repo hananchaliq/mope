@@ -1,0 +1,414 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and global preferences for MoneyScope.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "locale": {
+          "type": "string",
+          "description": "Preferred locale (default id-ID).",
+          "maxLength": 16
+        },
+        "timezone": {
+          "type": "string",
+          "description": "Preferred timezone (default Asia/Jakarta).",
+          "maxLength": 64
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark", "light", "system"],
+          "maxLength": 16
+        },
+        "onboardingCompleted": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "displayName", "locale", "timezone", "theme", "onboardingCompleted", "createdAt", "updatedAt"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "Financial account (cash, bank, ewallet, other) with integer IDR opening balance.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "type": {
+          "type": "string",
+          "enum": ["cash", "bank", "ewallet", "other"],
+          "maxLength": 16
+        },
+        "openingBalance": {
+          "type": "integer",
+          "description": "Opening balance in integer IDR."
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "isArchived": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "name", "type", "openingBalance", "currency", "isArchived", "createdAt", "updatedAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Income or expense category with distinct Makan vs Jajan classification.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["income", "expense"],
+          "maxLength": 16
+        },
+        "groupName": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "isSystem": {
+          "type": "boolean"
+        },
+        "sortOrder": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "name", "kind", "groupName", "icon", "color", "isSystem", "sortOrder", "createdAt", "updatedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial transaction (income, expense, or atomic transfer) with positive integer IDR amount.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense", "transfer"],
+          "maxLength": 16
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Strictly positive integer IDR amount (> 0)."
+        },
+        "accountId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "toAccountId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "categoryId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "merchant": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "paymentMethod": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "occurredAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "clientId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "linkedFoodLogId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "type", "amount", "accountId", "toAccountId", "categoryId", "description", "merchant", "paymentMethod", "occurredAt", "notes", "clientId", "linkedFoodLogId", "createdAt", "updatedAt"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Monthly or weekly spending budget with configurable alert thresholds.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["total", "category"],
+          "maxLength": 16
+        },
+        "categoryId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "period": {
+          "type": "string",
+          "enum": ["weekly", "monthly"],
+          "maxLength": 16
+        },
+        "limitAmount": {
+          "type": "integer"
+        },
+        "alertThresholds": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "name", "scope", "categoryId", "period", "limitAmount", "alertThresholds", "createdAt", "updatedAt"]
+    },
+    "FoodLog": {
+      "title": "FoodLog",
+      "description": "Confirmed food journal entry with verified nutrition database matches.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "mealType": {
+          "type": "string",
+          "enum": ["breakfast", "lunch", "dinner", "snack", "drinks"],
+          "maxLength": 16
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "eatenAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "transactionId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userConfirmed": {
+          "type": "boolean"
+        },
+        "modelName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "totalCalories": {
+          "type": "number"
+        },
+        "totalProteinG": {
+          "type": "number"
+        },
+        "totalCarbsG": {
+          "type": "number"
+        },
+        "totalFatG": {
+          "type": "number"
+        },
+        "totalFiberG": {
+          "type": "number"
+        },
+        "totalSodiumMg": {
+          "type": "number"
+        },
+        "validItemCount": {
+          "type": "integer"
+        },
+        "totalItemCount": {
+          "type": "integer"
+        },
+        "itemsSummary": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "mealType", "title", "eatenAt", "transactionId", "userConfirmed", "modelName", "totalCalories", "totalProteinG", "totalCarbsG", "totalFatG", "totalFiberG", "totalSodiumMg", "validItemCount", "totalItemCount", "itemsSummary", "createdAt", "updatedAt"]
+    },
+    "ReportPreference": {
+      "title": "ReportPreference",
+      "description": "Scheduled financial or nutrition report preference for Telegram or WhatsApp.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reportType": {
+          "type": "string",
+          "enum": ["financial", "nutrition"],
+          "maxLength": 16
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["daily", "weekly", "biweekly", "monthly", "quarterly", "custom_cron"],
+          "maxLength": 24
+        },
+        "customCron": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "sendTime": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["telegram", "whatsapp"],
+          "maxLength": 16
+        },
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "reportType", "frequency", "customCron", "sendTime", "channel", "isEnabled", "timezone", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Root user profile document isolated by Firebase Auth UID."
+    },
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": "Account",
+      "description": "User financial accounts."
+    },
+    "/users/{userId}/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "User income and expense categories."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "User financial transactions."
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "User spending budgets."
+    },
+    "/users/{userId}/foodLogs/{foodLogId}": {
+      "schema": "FoodLog",
+      "description": "User food journal entries."
+    },
+    "/users/{userId}/reportPreferences/{prefId}": {
+      "schema": "ReportPreference",
+      "description": "User automated report schedule preferences."
+    }
+  }
+}

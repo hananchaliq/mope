@@ -1,0 +1,6 @@
+{
+  "name": "MoneyScope — Personal Finance & Nutrition Intelligence",
+  "description": "Platform intelijen keuangan pribadi dan analisis nutrisi berbasis AI dengan pencatatan transaksi cepat, analitik lintas periode Asia/Jakarta, pencocokan nutrisi USDA/TKPI, dan laporan terjadwal Telegram/WhatsApp.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
